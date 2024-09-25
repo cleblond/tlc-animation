@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TLC Plate Animation with Multiple Lanes</title>
+    <title>TLC Plate Animation with Realistic Spots</title>
     <style>
         body {
             display: flex;
@@ -25,54 +25,23 @@
             flex-direction: column;
             margin-bottom: 10px;
         }
-        .column {
-	    width: 30%;
-	    text-align: center;
-	    flex: 1 1 300px;
-	    margin-left: 40px;
-	}
-
-	.container {
-	    display: flex;
-	    margin: auto;
-	    flex-wrap: wrap;
-	    flex-flow: row wrap;
-
-	}
-        
-        
-        
-        
     </style>
 </head>
 <body>
-<div class="container">
-	<div class="column">
-		<div class="controls">
-		    <label for="lanes">Number of lanes:</label>
-		    <select id="lanes">
-			<option value="1">1</option>
-			<option value="2">2</option>
-			<option value="3">3</option>
-		    </select>
-		    <button onclick="generateInputs()">Set Lanes</button>
-		    
-		    <div id="input-fields"></div>
-		    <button onclick="startAnimation()">Start Animation</button>
-		</div>
-	</div>
-	<div class="column">
-	
-		<canvas id="tlcCanvas" width="400" height="400"></canvas>
-	
-	
-	</div>
 
-
-
+<div class="controls">
+    <label for="lanes">Number of lanes:</label>
+    <select id="lanes">
+        <option value="2">2</option>
+        <option value="3">3</option>
+    </select>
+    <button onclick="generateInputs()">Set Lanes</button>
+    
+    <div id="input-fields"></div>
+    <button onclick="startAnimation()">Start Animation</button>
 </div>
 
-
+<canvas id="tlcCanvas" width="400" height="400"></canvas>
 
 <script>
     const canvas = document.getElementById('tlcCanvas');
@@ -87,11 +56,8 @@
 
     let compounds = [];
     let lanes = 2;
-    
-    const colors = ['#ff0000', '#ff7f00', '#9400d3', '#00ff00', '#0000ff'];
-    
-    const startBuffer = 50; // Distance from the bottom to start
-    const stopBuffer = 50; // Distance from the top to stop
+    const startBuffer = 50; // Distance from the bottom of the plate to start
+    const stopBuffer = 50;  // Distance from the top of the plate to stop
 
     function generateInputs() {
         lanes = document.getElementById('lanes').value;
@@ -117,14 +83,11 @@
 
         for (let i = 1; i <= numCompounds; i++) {
             const compoundInput = document.createElement('div');
-            
-            let initialrf = i*1/(numCompounds); 
-            console.log(colors[i]);
             compoundInput.innerHTML = `
                 <label for="rf${lane}-${i}">Rf value:</label>
-                <input type="number" id="rf${lane}-${i}" step="0.01" value="${initialrf}" min="0" max="1">
+                <input type="number" id="rf${lane}-${i}" step="0.01" value="0.5" min="0" max="1">
                 <label for="color${lane}-${i}">Color:</label>
-                <input type="color" id="color${lane}-${i}" value="`+colors[i-1]+`">
+                <input type="color" id="color${lane}-${i}" value="#ff0000">
             `;
             compoundsInputsDiv.appendChild(compoundInput);
         }
@@ -132,35 +95,21 @@
 
     function drawPlate() {
         ctx.fillStyle = '#f9f9f9';
-        ctx.setLineDash([]);
         ctx.fillRect(plate.x, plate.y, plate.width, plate.height);
         ctx.strokeRect(plate.x, plate.y, plate.width, plate.height);
-        
-        
-        //draw the start line
-        ctx.beginPath();
-        ctx.setLineDash([5,5]);
-        ctx.moveTo(plate.x, plate.height);
-        ctx.lineTo(plate.width+plate.x, plate.height);
-        ctx.stroke();
-        
-        
     }
 
     function drawCompound(compound) {
         ctx.beginPath();
         
+        // As the compound moves up, we make it more elongated and diffuse
         const progress = 1 - (compound.y - (plate.y + stopBuffer)) / (plate.height - startBuffer - stopBuffer);
         const spotWidth = 5 + progress * 10; // Increase width as it moves up (diffusion)
         const spotHeight = 5 + progress * 5; // Increase height, but less than width (elongation)
         const opacity = 1 - progress * 0.5; // Fade out as it moves up
         
-        
-        
-        //ctx.arc(compound.x, compound.y, 5, 0, 2 * Math.PI);
-        ctx.ellipse(compound.x, compound.y, spotHeight, spotWidth, 0, 0, 2 * Math.PI);
-        //ctx.fillStyle = compound.color;
-        ctx.fillStyle = `rgba(${compound.color}, ${opacity})`;
+        ctx.ellipse(compound.x, compound.y, spotWidth, spotHeight, 0, 0, 2 * Math.PI);
+        ctx.fillStyle = `rgba(${compound.color}, ${opacity})`; // Adjust color with opacity
         ctx.fill();
         ctx.closePath();
     }
@@ -173,40 +122,32 @@
             const numCompounds = document.getElementById(`compounds${lane}`).value;
             for (let i = 1; i <= numCompounds; i++) {
                 const rfValue = parseFloat(document.getElementById(`rf${lane}-${i}`).value);
-                //const color = document.getElementById(`color${lane}-${i}`).value;
                 const color = hexToRgb(document.getElementById(`color${lane}-${i}`).value);
-
                 compounds.push({
                     x: plate.x + laneSpacing * (lane - 0.5),
-                    y: canvas.height - startBuffer,
+                    y: plate.y + plate.height - startBuffer, // Start 50px up the plate
                     color: color,
                     rf: rfValue
                 });
             }
         }
 
-        console.log(compounds);
-        //throw new Error("Something went badly wrong!");
-        
         let time = 0;
         function animate() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             drawPlate();
-            
-            const totalDistance = (plate.height - startBuffer - stopBuffer);
 
             compounds.forEach(compound => {
-                //const rfDistance = compound.rf * plate.height;
-                const rfDistance = compound.rf * totalDistance; // Adjust for top/bottom buffers
-                //compound.y = 300 - (time * rfDistance);
-                //compound.y = canvas.height - startBuffer - (time * rfDistance);
-                compound.y = plate.y + plate.height - startBuffer - (time * rfDistance);
-
-
-                //console.log(compound.y);
+                // Calculate total distance between startBuffer and stopBuffer
+                const totalDistance = (plate.height - startBuffer - stopBuffer);
+                const rfDistance = compound.rf * totalDistance;
+                compound.y = plate.y + plate.height - startBuffer - (rfDistance * time);
+                
+                // Ensure compound stops exactly 50px from the top of the plate
                 if (compound.y < plate.y + stopBuffer) {
                     compound.y = plate.y + stopBuffer;
                 }
+
                 drawCompound(compound);
             });
 
@@ -218,7 +159,7 @@
 
         animate();
     }
-    
+
     function hexToRgb(hex) {
         const bigint = parseInt(hex.slice(1), 16);
         const r = (bigint >> 16) & 255;
@@ -226,11 +167,7 @@
         const b = bigint & 255;
         return `${r}, ${g}, ${b}`;
     }
-    
-    
-    
 
-    drawPlate();
     generateInputs();
 </script>
 
