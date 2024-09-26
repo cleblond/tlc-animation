@@ -49,6 +49,13 @@
 <div class="container">
 	<div class="column">
 		<div class="controls">
+		<label for="plate_size">Plate Size:</label>
+		<input type="radio" id="lab" name="plate_size" value="Lab" checked>
+		<label for="lab">Lab</label><br>
+		<input type="radio" id="prep" name="plate_size" value="Prep">
+		<label for="prep">Prep</label>
+		<br>
+		
 		    <label for="lanes">Number of lanes:</label>
 		    <select id="lanes">
 			<option value="1">1</option>
@@ -81,14 +88,14 @@
     const plate = {
         x: 50,
         y: 50,
-        width: 300,
+        width: 100,
         height: 300
     };
 
     let compounds = [];
     let lanes = 2;
     
-    const colors = ['#ff0000', '#ff7f00', '#9400d3', '#00ff00', '#0000ff'];
+    const colors = ['#8b7e7e', '#635e5a', '#8b7e7e', '#635e5a', '#8b7e7e'];
     
     const startBuffer = 50; // Distance from the bottom to start
     const stopBuffer = 50; // Distance from the top to stop
@@ -226,6 +233,35 @@
         const b = bigint & 255;
         return `${r}, ${g}, ${b}`;
     }
+    
+    document.addEventListener('DOMContentLoaded', () => {
+    // Get all input fields
+ 	const sizeinputs = document.querySelectorAll('input[name="plate_size"]');
+
+
+
+	    sizeinputs.forEach(function(input) {
+		input.addEventListener('change', () => {
+		    console.log("Change");
+		    size = document.querySelector('input[name="plate_size"]:checked').value;
+		    console.log(size);
+		    
+		    if (size == "Lab") {
+		    	plate.width = 100;
+		    } else {
+		    	plate.width = 300;
+		    }
+		    ctx.clearRect(0, 0, canvas.width, canvas.height);
+		    drawPlate();
+		});
+	    });
+
+    
+    });
+    
+    
+    
+    
     
     
     
